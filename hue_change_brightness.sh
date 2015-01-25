@@ -14,6 +14,8 @@
 
 # import my hue bash library
 source hue_bashlibrary.sh
+# import extra hue bash library
+source hue_bashlibrary_extra.sh
 
 
 # CONFIGURATION
@@ -83,38 +85,6 @@ else
 		exit
 	fi
 fi 
-
-
-function change_brightness() {
-echo "Get Brightness..."
-    hue_get_brightness $2
-echo "Brightness: $result_hue_get_brightness"
-
-    if [ "$result_hue_get_brightness" != '' ]; then
-        BRIGHTNESS=$[result_hue_get_brightness + $1]
-        
-        if [ "$BRIGHTNESS" -gt "255" ]; then
-            BRIGHTNESS=255
-        fi
-
-        if [ "$BRIGHTNESS" -lt "0" ]; then
-            BRIGHTNESS=0
-        fi
-
-        if [ "$BRIGHTNESS" != "0" ]; then
-            hue_onoff "on" $light
-        fi
-        
-echo "Set Brightness: $BRIGHTNESS"
-        hue_setstate_brightness $BRIGHTNESS $2
-
-        if [ "$BRIGHTNESS" == "0" ]; then
-            hue_onoff "off" $light
-        fi
-    fi
-    
-    sleep 1
-}
 
 # no arguments
 

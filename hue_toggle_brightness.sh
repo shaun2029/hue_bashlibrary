@@ -14,7 +14,8 @@
 
 # import my hue bash library
 source hue_bashlibrary.sh
-
+# import extra hue bash library
+source hue_bashlibrary_extra.sh
 
 # CONFIGURATION
 # -----------------------------------------------------------------------------------------
@@ -85,14 +86,11 @@ else
 	fi
 fi 
 
-
 function toggle_brightness() {
-echo "Get Brightness..."
     hue_get_brightness $light
-echo "Brightness: $result_hue_get_brightness"
 
     if [ "$result_hue_get_brightness" != '' ]; then
-        BRIGHTNESS=$[result_hue_get_brightness + $1]
+        BRIGHTNESS=$[result_hue_get_brightness]
         
         NEWBRIGHTNESS=0
         
@@ -104,26 +102,52 @@ echo "Brightness: $result_hue_get_brightness"
             fi
         done
       
-echo "Level: $BRIGHTNESS New: $NEWBRIGHTNESS"
+        for i in `seq 1 3`;
+        do
+            hue_is_on $light
 
-        if [ "$NEWBRIGHTNESS" != "0" ]; then
-            hue_onoff "on" $light
-        fi
-        
-        hue_setstate_brightness $NEWBRIGHTNESS $light
+            if [ "$NEWBRIGHTNESS" != "0" ]; then
+                if [ "$result_hue_is_on" == 0 ]; then
+                    hue_onoff "on" $light
+                fi
+            fi
+        done
 
-        if [ "$NEWBRIGHTNESS" == "0" ]; then
-            hue_onoff "off" $light
-        fi
+        for i in `seq 1 3`;
+        do
+            for i in `seq 1 30`;
+            do
+                hue_setstate_brightness $NEWBRIGHTNESS $light
+                hue_get_brightness $light
+
+                if [ "$result_hue_get_brightness" != '' ]; then
+                    if [ $result_hue_get_brightness == $NEWBRIGHTNESS ]; then
+                        break;
+                    fi
+                 fi
+            done
+        done
+
+        for i in `seq 1 3`;
+        do
+            if [ "$NEWBRIGHTNESS" == "0" ]; then
+                if [ "$result_hue_is_on" == 1 ]; then
+                    hue_onoff "off" $light
+                fi
+            else
+                if [ "$result_hue_is_on" == 0 ]; then
+                    hue_onoff "on" $light
+                fi
+            fi
+        done
     fi
-    
-    sleep 1
 }
 
 # no arguments
 
 light=$1
 levels=("$2")
+BRIGHTNESS=-1
 
 if [ $light == "s" ]; then
     if [ -f "/tmp/hue_selected_light.dat" ]; then
@@ -133,5 +157,35 @@ if [ $light == "s" ]; then
     fi
 fi
 
-toggle_brightness $levels $light
+# Do everything upto 3 times - seems to be inconsistancies
+# Get the current light level
+for i in `seq 1 3`;
+do
+    hue_get_brightness $light
+
+    if [ "$result_hue_get_brightness" != '' ]; then
+        if [ "$BRIGHTNESS" != "$result_hue_get_brightness" ]; then
+            BRIGHTNESS=$[result_hue_get_brightness]
+        else
+            break
+        fi
+    fi
+done        
+
+if [ "$BRIGHTNESS" == "-1" ]; then
+    exit 1
+fi
+             
+# Get the new brightness level        
+NEWBRIGHTNESS=0
+
+for i in $levels 
+do
+    if [ "$BRIGHTNESS" -lt $i ]; then 
+        NEWBRIGHTNESS=$i
+        break
+    fi
+done
+
+set_brightness $NEWBRIGHTNESS $light
 
