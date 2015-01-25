@@ -112,6 +112,8 @@ echo "Set Brightness: $BRIGHTNESS"
             hue_onoff "off" $light
         fi
     fi
+    
+    sleep 1
 }
 
 # no arguments
