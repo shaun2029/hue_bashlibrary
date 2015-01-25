@@ -28,18 +28,17 @@ loglevel=1									# 0 all logging off, # 1 gossip, # 2 verbose, # 3 errors
 
 
 # Variables of this scripts
-light='1'								# Define the lights you want to use, e.g. '3' or '3 4' or '3 4 7 9'
-
+selected=-1
+lights=($1) 								# Define the lights you want to use, e.g. '3' or '3 4' or '3 4 7 9'
+total_lights=${#lights[@]}
 
 # PROGRAM FUNCTIONS
 # -----------------------------------------------------------------------------------------
 
 function usage {
 	# cmdname is defined in the library
-	echo "Usage: $cmdname [link | unlink | discover | config]"
-	echo "Or:    $cmdname light delta"
-	echo "light -   Light to change or \"s\" for currently selected light"
-	echo "delta -   Amount to change light brightness by."
+	echo "Usage: $cmdname lights"
+	echo "lights    -   Lights to select from. e.g. \"1 2 3\""
 }
 
 
@@ -59,73 +58,71 @@ if [[ $# == 1 ]]
 	if [[ $1 == "link" ]]
 	then
 		bridge_link
+	    echo		# force new line
+	    exit
 	elif [[ $1 == "unlink" ]]
 	then
 		bridge_unlink
+	    echo		# force new line
+	    exit
 	elif [[ $1 == "config" ]]
 	then	
 		bridge_config
+	    echo		# force new line
+	    exit
 	elif [[ $1 == "discover" ]]
 	then
 		bridge_discover
-	else
+	elif  [[ $1 == "-h" || $1 == "--help" ]]
+	then
 		usage	
+	    echo		# force new line
+	    exit
 	fi
-	
-	echo		# force new line
-	exit
 else 
-	if (( $# > 2 )) || (( $# < 1 ))
+	if (( $# < 1 ))
 	then
 		# more than one argument, show usage
 		usage
 		echo
 		exit
 	fi
-fi 
+fi 	
 
 
-function change_brightness() {
-echo "Get Brightness..."
-    hue_get_brightness $2
-echo "Brightness: $result_hue_get_brightness"
+function toggle_state() {
+    hue_is_on $1
 
-    if [ "$result_hue_get_brightness" != '' ]; then
-        BRIGHTNESS=$[result_hue_get_brightness + $1]
-        
-        if [ "$BRIGHTNESS" -gt "255" ]; then
-            BRIGHTNESS=255
-        fi
-
-        if [ "$BRIGHTNESS" -lt "0" ]; then
-            BRIGHTNESS=0
-        fi
-
-        if [ "$BRIGHTNESS" != "0" ]; then
-            hue_onoff "on" $light
-        fi
-        
-echo "Set Brightness: $BRIGHTNESS"
-        hue_setstate_brightness $BRIGHTNESS $2
-
-        if [ "$BRIGHTNESS" == "0" ]; then
-            hue_onoff "off" $light
-        fi
+    if [ "$result_hue_is_on" == 0 ]; then
+        hue_onoff "on" $1
+    else
+        hue_onoff "off" $1
     fi
+
+    sleep 1
 }
 
 # no arguments
 
-light=$1
-delta=$2
-
-if [ $light == "s" ]; then
-    if [ -f "/tmp/hue_selected_light.dat" ]; then
-        light=`cat "/tmp/hue_selected_light.dat"`
-    else
-        light=1
-    fi
+if [ -f "/tmp/hue_selected.dat" ]; then
+    selected=`cat "/tmp/hue_selected.dat"`
 fi
 
-change_brightness $delta $light
+selected=$[selected + 1]
+
+if [ $selected -ge $total_lights ]; then
+    selected=0
+fi
+
+echo $selected > "/tmp/hue_selected.dat"
+
+light=${lights[$selected]}
+
+echo $light > "/tmp/hue_selected_light.dat"
+
+toggle_state $light
+toggle_state $light
+
+
+exit 0
 
