@@ -161,7 +161,9 @@ function hue_get_brightness() {
 	output=$(curl -s -H "Content-Type: application/json" "http://$ip/api/$username/lights/$1")
 	log_error "$output"
 
-	result_hue_get_brightness=`echo ${output} | perl -n -e'/\"bri\":(\d+),/ && print $1'`
+# Remove perl dependency
+#	result_hue_get_brightness=`echo ${output} | perl -n -e'/\"bri\":(\d+),/ && print $1'`
+	result_hue_get_brightness=`echo ${output} | cut -d',' -f2 | cut -d':' -f2 | tr -d '"'`
 }
 
 
