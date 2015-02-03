@@ -91,3 +91,41 @@ function change_brightness() {
     
     set_brightness $NEWLEVEL $2
 }
+
+function toggle_state() {
+    STATE=-1
+
+    for i in `seq 1 3`;
+    do
+        hue_is_on $1
+        
+        if [ "$result_hue_is_on" != "$STATE" ]; then
+            STATE="$result_hue_is_on"
+        else
+            break
+        fi
+    done
+    
+    # Toggle state
+    if [ "$STATE" == 1 ]; then
+        STATE=0
+    else
+        STATE=1
+    fi
+
+    for i in `seq 1 3`;
+    do
+        if [ $STATE == 0 ]; then
+            hue_onoff "off" $1
+        else
+            hue_onoff "on" $1
+        fi
+    
+        hue_is_on $1
+
+        if [ "$result_hue_is_on" == $STATE ]; then
+            break
+        fi
+    done
+}
+

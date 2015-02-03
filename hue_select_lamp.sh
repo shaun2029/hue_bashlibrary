@@ -14,7 +14,8 @@
 
 # import my hue bash library
 source hue_bashlibrary.sh
-
+# import extra hue bash library
+source hue_bashlibrary_extra.sh
 
 # CONFIGURATION
 # -----------------------------------------------------------------------------------------
@@ -90,18 +91,6 @@ else
 fi 	
 
 
-function toggle_state() {
-    hue_is_on $1
-
-    if [ "$result_hue_is_on" == 0 ]; then
-        hue_onoff "on" $1
-    else
-        hue_onoff "off" $1
-    fi
-
-    sleep 1
-}
-
 # no arguments
 
 if [ -f "/tmp/hue_selected.dat" ]; then
@@ -122,7 +111,6 @@ echo $light > "/tmp/hue_selected_light.dat"
 
 toggle_state $light
 toggle_state $light
-
 
 exit 0
 
