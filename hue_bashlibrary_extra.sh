@@ -8,57 +8,53 @@ function set_brightness() {
     if [[ $LEVEL -gt 254 ]]; then
         LEVEL=254
     fi
-
-    if [[ $1 -lt 0 ]]; then
+    
+    if [[ $LEVEL -lt 0 ]]; then
         LEVEL=0
     fi
 
     hue_is_on $2
 
     # Turn on light if brightness > 0
-    if [ "$result_hue_is_on" == 0 ]; then
-        hue_onoff "on" $2
+    if [ $LEVEL > 0 ]; then
+        if [ "$result_hue_is_on" == 0 ]; then
+            hue_onoff "on" $2
+        fi
     fi
 
-    # Ensure light level 'takes'
-    for j in `seq 1 3`;
-    do
-        hue_setstate_brightness $LEVEL $2
-        hue_get_brightness $2
-
-        if [ "$result_hue_get_brightness" == "$LEVEL" ]; then
-            break;
-        fi
-    done
+    hue_setstate_brightness $LEVEL $2
 
     # Turn off light if brightness = 0
-    if [ "$LEVEL" == "0" ]; then
-        hue_is_on $2
-
+    if [ $LEVEL == 0 ]; then
         if [ "$result_hue_is_on" == 1 ]; then
             hue_onoff "off" $2
         fi
     fi
+
+    # Save brightness level to a file    
+    echo "$LEVEL" > "/tmp/hue_light$2-brightness.dat"
 }
 
+# Gets the current light brightness from a file if it exists
+function get_brightness() {
+    if [ -f "/tmp/hue_light$1-brightness.dat" ]; then
+        result_hue_get_brightness=`cat "/tmp/hue_light$1-brightness.dat"` 
+    else
+        hue_get_brightness $1
+        
+      	if [ "$result_hue_get_brightness" == '' ]; then
+      	    echo "-------------------------------------"
+      	    echo "ERROR getting brightness for light $1"
+      	    echo "-------------------------------------"
+      	    exit 1
+      	fi
+    fi
+}
 
 function change_brightness() {
     LEVEL=-1
 
-    hue_get_brightness $2
-
-    hue_is_on $1
-
-    # if the light is off the brightness level = 0
-    if [ "$STATE" == 1 ]; then
-    	if [ "$result_hue_get_brightness" != '' ]; then
-            LEVEL=$[result_hue_get_brightness]
-    	else
-            exit 1
-    	fi
-    else
-        LEVEL=0
-    fi
+    get_brightness $2
 
     # Calculate the new brightness level
     NEWLEVEL=$[LEVEL + $1]
@@ -72,7 +68,7 @@ function toggle_state() {
     hue_is_on $1
 
     # Toggle state
-    if [ "$STATE" == 1 ]; then
+    if [ "$result_hue_is_on" == 1 ]; then
         STATE=0
     else
         STATE=1

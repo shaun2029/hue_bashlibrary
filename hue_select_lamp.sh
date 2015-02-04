@@ -109,8 +109,7 @@ light=${lights[$selected]}
 
 echo $light > "/tmp/hue_selected_light.dat"
 
-toggle_state $light
-toggle_state $light
+hue_alert single $light
 
 exit 0
 

@@ -157,25 +157,10 @@ if [ $light == "s" ]; then
     fi
 fi
 
-# Do everything upto 3 times - seems to be inconsistancies
-# Get the current light level
-for i in `seq 1 3`;
-do
-    hue_get_brightness $light
+get_brightness $light
 
-    if [ "$result_hue_get_brightness" != '' ]; then
-        if [ "$BRIGHTNESS" != "$result_hue_get_brightness" ]; then
-            BRIGHTNESS=$[result_hue_get_brightness]
-        else
-            break
-        fi
-    fi
-done        
+BRIGHTNESS=$[result_hue_get_brightness]
 
-if [ "$BRIGHTNESS" == "-1" ]; then
-    exit 1
-fi
-             
 # Get the new brightness level        
 NEWBRIGHTNESS=0
 
