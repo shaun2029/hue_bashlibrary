@@ -38,7 +38,7 @@ lights='1'  								# Define the lights you want to use, e.g. '3' or '3 4' or '3
 function usage {
 	# cmdname is defined in the library
 	echo "Usage: $cmdname lights"
-	echo "lights    -   Lights to change, master light first"
+	echo "lights    -   Lights to change, master light first e.g \"1 2 3\""
 	echo "Note: The master light is used to get light on/off state."
 }
 
