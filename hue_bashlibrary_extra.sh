@@ -16,7 +16,7 @@ function set_brightness() {
     hue_is_on $2
 
     # Turn on light if brightness > 0
-    if [ $LEVEL > 0 ]; then
+    if [ $LEVEL -gt 0 ]; then
         if [ "$result_hue_is_on" == 0 ]; then
             hue_onoff "on" $2
         fi
@@ -25,7 +25,7 @@ function set_brightness() {
     hue_setstate_brightness $LEVEL $2
 
     # Turn off light if brightness = 0
-    if [ $LEVEL == 0 ]; then
+    if [ $LEVEL -eq 0 ]; then
         if [ "$result_hue_is_on" == 1 ]; then
             hue_onoff "off" $2
         fi
