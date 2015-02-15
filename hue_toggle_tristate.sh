@@ -40,6 +40,7 @@ function usage {
 	echo "Usage: $cmdname lights"
 	echo "lights    -   Lights to change, master light first e.g \"1 2 3\""
 	echo "Note: The master light is used to get light on/off state."
+	echo "      When in the the third state only the master light is on."
 }
 
 
