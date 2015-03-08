@@ -30,7 +30,7 @@ loglevel=1									# 0 all logging off, # 1 gossip, # 2 verbose, # 3 errors
 
 # Variables of this scripts
 light='1'								# Define the lights you want to use, e.g. '3' or '3 4' or '3 4 7 9'
-levels=("0 35 70 140 254")
+levels=("50 100 150 254")
 
 # PROGRAM FUNCTIONS
 # -----------------------------------------------------------------------------------------
@@ -86,79 +86,11 @@ else
 	fi
 fi 
 
-function toggle_brightness() {
-    hue_get_brightness $light
-
-    if [ "$result_hue_get_brightness" != '' ]; then
-        BRIGHTNESS=$[result_hue_get_brightness]
-        
-        NEWBRIGHTNESS=0
-        
-        for i in $levels 
-        do
-            if [ "$BRIGHTNESS" -lt $i ]; then 
-                NEWBRIGHTNESS=$i
-                break
-            fi
-        done
-      
-        for i in `seq 1 3`;
-        do
-            hue_is_on $light
-
-            if [ "$NEWBRIGHTNESS" != "0" ]; then
-                if [ "$result_hue_is_on" == 0 ]; then
-                    hue_onoff "on" $light
-                fi
-            fi
-        done
-
-        for i in `seq 1 3`;
-        do
-            for i in `seq 1 30`;
-            do
-                hue_setstate_brightness $NEWBRIGHTNESS $light
-                hue_get_brightness $light
-
-                if [ "$result_hue_get_brightness" != '' ]; then
-                    if [ $result_hue_get_brightness == $NEWBRIGHTNESS ]; then
-                        break;
-                    fi
-                 fi
-            done
-        done
-
-        for i in `seq 1 3`;
-        do
-            if [ "$NEWBRIGHTNESS" == "0" ]; then
-                if [ "$result_hue_is_on" == 1 ]; then
-                    hue_onoff "off" $light
-                fi
-            else
-                if [ "$result_hue_is_on" == 0 ]; then
-                    hue_onoff "on" $light
-                fi
-            fi
-        done
-    fi
-}
-
-# Toggles the state of the light
-function toggle_state() {
-    hue_is_on $1
-
-    if [ "$result_hue_is_on" == 0 ]; then
-        hue_onoff "on" $1
-    else
-        hue_onoff "off" $1
-    fi
-}
-
 # no arguments
 
 light=$1
 levels=("$2")
-BRIGHTNESS=-1
+BRIGHTNESS=0
 TIMEDELAY=5         # Timeout between uses
 
 if [ $light == "s" ]; then
@@ -186,24 +118,49 @@ echo "Time: '$time'"
 
 # if timout expired since last use switch it on or off.
 if [ "$time" -lt $NOWTIME ]; then
-    toggle_state $light
-else
-    get_brightness $light
+    hue_is_on $light
 
-    BRIGHTNESS=$[result_hue_get_brightness]
+    # If the light is off use lowest brightness
+    if [ "$result_hue_is_on" == 0 ]; then
+        get_brightness $light
+        MINBRIGHTNESS=`echo "$levels" | { read first second ; echo $first ; }`
 
-    # Get the new brightness level        
-    NEWBRIGHTNESS=0
-
-    for i in $levels 
-    do
-        if [ "$BRIGHTNESS" -lt $i ]; then 
-            NEWBRIGHTNESS=$i
-            break
+        BRIGHTNESS=$[result_hue_get_brightness]
+        if [ "$BRIGHTNESS" -lt "$MINBRIGHTNESS" ]; then 
+            set_brightness $MINBRIGHTNESS $light
+        else
+            hue_onoff "on" $light
         fi
-    done
+    else
+        hue_onoff "off" $light
+    fi
+else
+    hue_is_on $light
 
-    set_brightness $NEWBRIGHTNESS $light
+    # If the light is off use lowest brightness
+    if [ "$result_hue_is_on" == 0 ]; then
+        get_brightness $light
+        MINBRIGHTNESS=`echo "$levels" | { read first second ; echo $first ; }`
+        set_brightness $MINBRIGHTNESS $light
+    else
+        get_brightness $light
+
+        BRIGHTNESS=$[result_hue_get_brightness]
+
+        # Get the new brightness level        
+        NEWBRIGHTNESS=0
+
+        for i in $levels 
+        do
+            if [ "$BRIGHTNESS" -lt $i ]; then 
+                NEWBRIGHTNESS=$i
+                break
+            fi
+        done
+
+        set_brightness $NEWBRIGHTNESS $light
+    fi
 fi
 
 exit 0
+
