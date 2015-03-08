@@ -143,11 +143,23 @@ function toggle_brightness() {
     fi
 }
 
+# Toggles the state of the light
+function toggle_state() {
+    hue_is_on $1
+
+    if [ "$result_hue_is_on" == 0 ]; then
+        hue_onoff "on" $1
+    else
+        hue_onoff "off" $1
+    fi
+}
+
 # no arguments
 
 light=$1
 levels=("$2")
 BRIGHTNESS=-1
+TIMEDELAY=5         # Timeout between uses
 
 if [ $light == "s" ]; then
     if [ -f "/tmp/hue_selected_light.dat" ]; then
@@ -157,20 +169,41 @@ if [ $light == "s" ]; then
     fi
 fi
 
-get_brightness $light
+if [ -f "/tmp/hue_toggle_brightness_$light.dat" ]; then
+    # Get the first number
+    time=`cat "/tmp/hue_toggle_brightness_$light.dat" | { read first second ; echo $first ; }`
+else
+    time=`date +%s`
+    time=$[time + TIMEDELAY + 1] # force timeout
+fi
 
-BRIGHTNESS=$[result_hue_get_brightness]
+# Save new timeout
+NOWTIME=`date +%s`
+TIMEOUT=$[NOWTIME + TIMEDELAY]
+echo "$TIMEOUT" > "/tmp/hue_toggle_brightness_$light.dat"
 
-# Get the new brightness level        
-NEWBRIGHTNESS=0
+echo "Time: '$time'"
 
-for i in $levels 
-do
-    if [ "$BRIGHTNESS" -lt $i ]; then 
-        NEWBRIGHTNESS=$i
-        break
-    fi
-done
+# if timout expired since last use switch it on or off.
+if [ "$time" -lt $NOWTIME ]; then
+    toggle_state $light
+else
+    get_brightness $light
 
-set_brightness $NEWBRIGHTNESS $light
+    BRIGHTNESS=$[result_hue_get_brightness]
 
+    # Get the new brightness level        
+    NEWBRIGHTNESS=0
+
+    for i in $levels 
+    do
+        if [ "$BRIGHTNESS" -lt $i ]; then 
+            NEWBRIGHTNESS=$i
+            break
+        fi
+    done
+
+    set_brightness $NEWBRIGHTNESS $light
+fi
+
+exit 0
